@@ -1,4 +1,7 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Security.Claims;
+using AuthECAPI.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 
 namespace AuthECAPI.Controllers{
 
@@ -11,9 +14,17 @@ public static class AccountEndpoints
     }
 
     [Authorize]
-    private static string GetUserProfile()
+    private static async Task<IResult> GetUserProfile(ClaimsPrincipal user, UserManager<ApiUser> userManager)
     {
-        return "User Profile";
+        string userID = user.Claims.First(x => x.Type == "UserID").Value;
+        var userDatils = await userManager.FindByIdAsync(userID);
+
+        return Results.Ok(
+            new
+            {
+                Email = userDatils?.Email,
+                FullName = userDatils?.FullName
+            });
     }
 }
 }

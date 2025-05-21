@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using AuthECAPI.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 
@@ -12,6 +13,7 @@ public static class IdentifyExtension
     {
         services
             .AddIdentityApiEndpoints<ApiUser>()
+            .AddRoles<IdentityRole>()
             .AddEntityFrameworkStores<AppDBContext>();
         return services;
     }
@@ -29,8 +31,8 @@ public static class IdentifyExtension
         
         return services;
     }
-    
-    
+
+
     public static IServiceCollection AddIdentityAuth(this IServiceCollection services, IConfiguration config)
     {
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme
@@ -43,10 +45,25 @@ public static class IdentifyExtension
                 IssuerSigningKey = new SymmetricSecurityKey(
                     Encoding.UTF8.GetBytes(config["AppSettings:JWTSecret"]!)),
                 ValidateIssuer = false,
-                ValidateAudience = false
+                ValidateAudience = false,
+                ValidateLifetime = true,
+                ClockSkew = TimeSpan.Zero
+                
             };
         });
+        services.AddAuthorization(options =>
+        {
+            options.FallbackPolicy = new AuthorizationPolicyBuilder()
+                .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme)
+                .RequireAuthenticatedUser().Build();
+            
+            options.AddPolicy("HasLibraryID", policy => policy.RequireClaim("LibraryID")); 
+            options.AddPolicy("FemalesOnly", policy => policy.RequireClaim("Gender","Female"));
+            options.AddPolicy("Under10", policy => policy.RequireAssertion(context =>
+                Int32.Parse(context.User.Claims.First(x => x.Type == "Age").Value) < 10));
+        });
         
-        return services;
+        
+    return services;
     }
 }

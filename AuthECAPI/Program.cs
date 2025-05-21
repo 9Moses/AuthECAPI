@@ -75,7 +75,8 @@ app.MapControllers();
 //     .MapIdentityApi<ApiUser>();
 app.MapGroup("/api")
     .MapIdentityUserEndpoints()
-    .MapAccountEndpoints();
+    .MapAccountEndpoints()
+    .MapAuthorizationDemoEndpoint();
 
 
 app.Run();
